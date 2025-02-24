@@ -16,6 +16,8 @@ import {
   NVMesh,
   NVMeshLoaders,
 } from "@niivue/niivue";
+import ViewMenu from "./components/viewMenu";
+import { Menu, MenuItem} from "@mui/material";
 import { NiivueCanvas } from "./components/NiivueCanvas";
 import { ImageProcessor } from "./components/ImageProcessor";
 import { Sidebar } from "./components/Sidebar";
@@ -906,6 +908,15 @@ function App() {
     ) {
       return;
     }
+    if (anchor === "hide") {
+      setSideBarState({
+        volumes: false,
+        meshes: false,
+        settings: false,
+      });
+      toggleSidebarContent(NONE);
+      return;
+    }
 
     let content = NONE;
     switch (anchor) {
@@ -1211,95 +1222,166 @@ function App() {
     default:
       sideBar = <></>;
   }
+  const [isSidebarLeft, setIsSidebarLeft] = useState(true);
 
-  return (
-    // wrap the app in the Niivue context
-    <NV.Provider value={_nv}>
-      {/* AppContainer: the parent component that lays out the rest of the scene */}
-      {/* <div> */}
-      <Container
-        disableGutters
-        maxWidth={false}
+const toggleSidebarPosition = () => {
+  setIsSidebarLeft((prev) => !prev);
+};
+
+
+
+
+  const [anchorEl, setAnchorEl] = useState(null);
+  
+  // Open menu
+  const handleClick = (event) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  // Close menu
+  const handleClose = () => {
+    setAnchorEl(null);
+  };
+
+  // Define actions for menu items
+  const handleTask = (task) => {
+    console.log(`Executing: ${task}`);
+    handleClose(); // Close menu after selecting
+  };
+  const viewMenuItems = [
+    { label:"Swap Position", onClick:toggleSidebarPosition }
+  ];
+
+return (
+  <NV.Provider value={_nv}>
+    <Container
+      disableGutters
+      maxWidth={false}
+      sx={{
+        display: "flex",
+        flexDirection: "column",
+        height: "100vh",
+        width: "100vw",
+        minHeight: "300px",
+        paddingTop: "50px",
+      }}
+    >
+      {/* Header */}
+      <Box
         sx={{
+          position: "fixed",
+          top: "0px",
+          zIndex: "1000",
+          backgroundColor: "white",
+          width: "100%",
+          height: "50px",
           display: "flex",
-          flexDirection: "column",
-          height: "100vh",
-          width: "100vw",
-          minHeight: "300px",
-          paddingTop: "50px"
+          alignItems: "center",
+          paddingX: 2,
+          justifyContent: "space-between",
         }}
       >
-        {/* CssBaseline sets some standard CSS configs for working with MUI */}
-        {/* <CssBaseline /> */}
+        <Box sx={{ display: "flex", alignItems: "center" }}>
+          <IconButton aria-label="collapse" onClick={toggleDrawer("hide", true)}>
+            <ChevronLeftIcon color="primary" />
+          </IconButton>
+          {["volumes", "meshes", "settings"].map((anchor) => (
+            <Button
+              key={anchor}
+              onClick={toggleDrawer(anchor, true)}
+              sx={{ marginX: 1 }}
+            >
+              <Typography
+                sx={{
+                  textDecoration: sideBarState[anchor] ? "underline" : "",
+                }}
+              >
+                {anchor}
+              </Typography>
+            </Button>
+          ))}
+        </Box>
+        <Box sx={{ display: "flex", alignItems: "center", paddingRight: 4 }}>
+         
+          
+        </Box>
+      <Box sx={{ display: "flex", alignItems: "center", paddingRight: 4 }}><ViewMenu title="View" menuItems={viewMenuItems} />
+
+     
+</Box>
+        
+       
+      </Box>
+
+      {/* Main Content Area */}
+      <Box
+        display={"flex"}
+        flexDirection={"row"}
+        height={"100%"}
+        width={"100%"}
+        sx={{ marginTop: "0px" }} // Adjust for the fixed header
+      >
+        {/* Left Sidebar */}
+        {isSidebarLeft && (
+          <Box
+            sx={{
+              width: sideBarState.volumes || sideBarState.meshes || sideBarState.settings ? "30%" : "0px",
+              transition: "width 0.3s ease",
+              overflow: "hidden",
+            }}
+          >
+            <Sidebar>{sideBar}</Sidebar>
+          </Box>
+        )}
+
+        {/* NiivueCanvas */}
         <Box
           sx={{
-            position: "fixed",
-            top: "0px",
-            zIndex: "1000",
-            backgroundColor: "white",
+            flex: 1,
             width: "100%",
-            height: "50px",
-            display: 'flex',
-            alignItems: 'center',
-            paddingX: 2,
-            justifyContent: 'space-between' // Distribute space between children
+            transition: "margin 0.3s ease",
+            marginLeft: isSidebarLeft && (sideBarState.volumes || sideBarState.meshes || sideBarState.settings) ? "30%" : "0px",
+            marginRight: !isSidebarLeft && (sideBarState.volumes || sideBarState.meshes || sideBarState.settings) ? "30%" : "0px",
           }}
         >
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <IconButton
-              aria-label="collapse"
-              onClick={toggleDrawer("hide", true)}
-            >
-              <ChevronLeftIcon color="primary" />
-            </IconButton>
-            {["volumes", "meshes", "settings"].map((anchor) => (
-              <Button
-                key={anchor}
-                onClick={toggleDrawer(anchor, true)}
-                sx={{ marginX: 1 }}
-              >
-                <Typography
-                  sx={{
-                    textDecoration: sideBarState[anchor] ? "underline" : "",
-                  }}
-                >
-                  {anchor}
-                </Typography>
-              </Button>
-            ))}
-          </Box>
-          <Box sx={{ display: 'flex', alignItems: 'center', paddingRight: 4 }}> {/* Increased paddingRight */}
-            { /* right justified header content */}
-          </Box>
+          <NiivueCanvas nv={nv} />
         </Box>
 
-        <Box display={"flex"} flexDirection={"row"} height={"100%"} gap={"20px"} width={"100vw"} >
-          {/* Sidebar: is the left panel that shows all files and image/scene widgets */}
-          {sideBar}
-          {/* Niivue Canvas: where things are rendered :) */}
-          <NiivueCanvas nv={nv} flex={"1"} />
-          <ColorPickerDialog
-            isOpen={isColorPickerOpen}
-            pickedColor={colorPickerColor}
-            onChange={onColorPickerChange}
-            onClose={onCloseColorPicker}
-            isFullScreen={false}
-          />
-          <SceneSettingsDialog
-            isOpen={isSceneSettingsOpen}
-            initialJsonObject={nv.opts}
-            onJsonChange={handleJsonChange}
-            isFullScreen={true}
-            onClose={(wasCanceled) => {
-              console.log("isCanceled", wasCanceled);
-              setSceneSettingsOpen(false);
+        {/* Right Sidebar */}
+        {!isSidebarLeft && (
+          <Box
+            sx={{
+              width: sideBarState.volumes || sideBarState.meshes || sideBarState.settings ? "30%" : "0px",
+              transition: "width 0.3s ease",
+              overflow: "hidden",
             }}
-          />
-        </Box>
-      </Container>
-      {/* </div> */}
-    </NV.Provider>
-  );
+          >
+            <Sidebar>{sideBar}</Sidebar>
+          </Box>
+        )}
+      </Box>
+
+      {/* Dialogs */}
+      <ColorPickerDialog
+        isOpen={isColorPickerOpen}
+        pickedColor={colorPickerColor}
+        onChange={onColorPickerChange}
+        onClose={onCloseColorPicker}
+        isFullScreen={false}
+      />
+      <SceneSettingsDialog
+        isOpen={isSceneSettingsOpen}
+        initialJsonObject={nv.opts}
+        onJsonChange={handleJsonChange}
+        isFullScreen={true}
+        onClose={(wasCanceled) => {
+          console.log("isCanceled", wasCanceled);
+          setSceneSettingsOpen(false);
+        }}
+      />
+    </Container>
+  </NV.Provider>
+);
 }
 
 export default App;
